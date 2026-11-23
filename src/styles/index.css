@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ocean-deep: #0B192C;
+  --ocean-mid: #163A5F;
+  --deck-bg: #F8F9FA;
+  --card-surface: #FFFFFF;
+  --border-hairline: #E5E7EB;
+  --ink-primary: #111827;
+  --ink-muted: #6B7280;
+  --joel-crimson: #D63826;
+  --claire-teal: #1A7F8E;
+  --berry-gold: #E5A93C;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums;
+    background-color: var(--deck-bg);
+    color: var(--ink-primary);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
