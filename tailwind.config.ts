@@ -5,13 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        'ocean-deep': 'var(--ocean-deep)',
-        'ocean-mid': 'var(--ocean-mid)',
-        'deck-bg': 'var(--deck-bg)',
-        'card-surface': 'var(--card-surface)',
-        'border-hairline': 'var(--border-hairline)',
-        'ink-primary': 'var(--ink-primary)',
-        'ink-muted': 'var(--ink-muted)',
+        // Midnight Grand Line palette
+        'sea-abyss': 'var(--sea-abyss)',
+        'sea-midnight': 'var(--sea-midnight)',
+        'sea-elevated': 'var(--sea-elevated)',
+        'brass-hairline': 'var(--brass-hairline)',
+        'ink-ivory': 'var(--ink-ivory)',
+        'ink-mist': 'var(--ink-mist)',
         'joel-crimson': 'var(--joel-crimson)',
         'claire-teal': 'var(--claire-teal)',
         'berry-gold': 'var(--berry-gold)',
@@ -22,6 +22,10 @@ export default {
       spacing: {
         'safe-top': 'env(safe-area-inset-top)',
         'safe-bottom': 'env(safe-area-inset-bottom)',
+      },
+      boxShadow: {
+        'brass-glow': '0 0 24px rgba(229, 169, 60, 0.22)',
+        'abyss-dock': '0 12px 32px rgba(3, 9, 18, 0.75)',
       },
     },
   },

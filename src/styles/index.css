@@ -3,15 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --ocean-deep: #0B192C;
-  --ocean-mid: #163A5F;
-  --deck-bg: #F8F9FA;
-  --card-surface: #FFFFFF;
-  --border-hairline: #E5E7EB;
-  --ink-primary: #111827;
-  --ink-muted: #6B7280;
-  --joel-crimson: #D63826;
-  --claire-teal: #1A7F8E;
+  --sea-abyss: #07111E;
+  --sea-midnight: #0D1F36;
+  --sea-elevated: #142B47;
+  --brass-hairline: rgba(229, 169, 60, 0.28);
+  --ink-ivory: #F5F0E6;
+  --ink-mist: #8FA3BF;
+  --joel-crimson: #E04332;
+  --claire-teal: #22A6B8;
   --berry-gold: #E5A93C;
 }
 
@@ -20,14 +19,244 @@
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     font-variant-numeric: tabular-nums;
-    background-color: var(--deck-bg);
-    color: var(--ink-primary);
+    background-color: var(--sea-abyss);
+    color: var(--ink-ivory);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    color-scheme: dark;
+  }
+
+  /* Enforce tabular-nums globally on counters, dates, inputs, and time elements */
+  time,
+  data,
+  output,
+  input[type='date'],
+  input[type='number'],
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-.pixelated {
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- Scene 1: Voyage Launch Animations (2.0s total) --- */
+
+@keyframes sunny-sail-burst {
+  0% {
+    transform: translateX(-115%) translateY(6px) rotate(-1.5deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  28% {
+    transform: translateX(-28%) translateY(-7px) rotate(1.6deg);
+  }
+  48% {
+    transform: translateX(0%) translateY(5px) rotate(-1.4deg);
+  }
+  64% {
+    transform: translateX(6%) translateY(-4px) rotate(-3deg) scale(1.02);
+  }
+  72% {
+    transform: translateX(-4%) translateY(2px) rotate(-6deg) scale(0.97, 1.04);
+  }
+  100% {
+    transform: translateX(175%) translateY(-48px) rotate(-12deg) scale(1.08);
+    opacity: 0;
+  }
+}
+
+@keyframes coup-de-burst-blast {
+  0%,
+  65% {
+    opacity: 0;
+    transform: scale(0.25) translateX(0);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1.05) translateX(-12px);
+  }
+  85% {
+    opacity: 0.92;
+    transform: scale(1.45) translateX(-36px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.1) translateX(-80px);
+  }
+}
+
+@keyframes coup-de-burst-flash {
+  0%,
+  66% {
+    opacity: 0;
+  }
+  74% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes wave-drift-slow {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes wave-drift-fast {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+/* --- Scene Transitions & Sheet Animations --- */
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes map-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes map-zoom-out {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes coin-pop {
+  0% {
+    transform: scale(0.88);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.75;
+  }
+  70% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+
+.animate-sunny-voyage {
+  animation: sunny-sail-burst 2000ms cubic-bezier(0.32, 0.08, 0.24, 1) forwards;
+}
+
+.animate-coup-blast {
+  animation: coup-de-burst-blast 2000ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-coup-flash {
+  animation: coup-de-burst-flash 2000ms ease-out forwards;
+}
+
+.animate-wave-slow {
+  animation: wave-drift-slow 7s linear infinite;
+}
+
+.animate-wave-mid {
+  animation: wave-drift-fast 4.8s linear infinite;
+}
+
+.animate-wave-fast {
+  animation: wave-drift-slow 3.2s linear infinite;
+}
+
+.animate-sheet-up {
+  animation: sheet-up 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms ease-out both;
+}
+
+.animate-map-zoom-in {
+  animation: map-zoom-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-map-zoom-out {
+  animation: map-zoom-out 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-coin-pop {
+  animation: coin-pop 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-wave-slow,
+  .animate-wave-mid,
+  .animate-wave-fast,
+  .animate-pulse-ring {
+    animation: none;
+  }
 }
