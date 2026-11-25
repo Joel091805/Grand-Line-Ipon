@@ -1,4 +1,5 @@
 import { OceanViewport, spawnBerryArc } from './components/OceanViewport';
+import { SyncPanel } from './components/SyncPanel';
 import { useIponStore } from './store/useIponStore';
 
 export function App() {
@@ -20,7 +21,6 @@ export function App() {
 
   return (
     <div class="min-h-dvh flex flex-col bg-deck-bg text-ink-primary">
-      {/* Phase 2: Procedural Hi-Bit <canvas> Ocean Viewport (Top 30% settled) */}
       <OceanViewport store={store} />
 
       <main class="flex-1 px-4 py-4 max-w-[390px] w-full mx-auto space-y-4 pb-safe-bottom">
@@ -80,6 +80,8 @@ export function App() {
             </button>
           </div>
         </section>
+
+        <SyncPanel />
       </main>
     </div>
   );

@@ -201,6 +201,39 @@ export type IponEvent =
   | { type: 'habulin'; person: PersonId; dates: DateKey[] }
   | { type: 'import'; summary: ImportSummary; mode: ImportMode }
   | { type: 'note'; monthKey: MonthKey }
+  | { type: 'restore'; mode: ImportMode }
   | { type: 'reset' };
 
 export type IponListener = (event: IponEvent) => void;
+
+// ---------------------------------------------------------------------------
+// Sync
+// ---------------------------------------------------------------------------
+
+export interface DayChange {
+  key: DateKey;
+  person: PersonId;
+  value: Paid;
+}
+
+export interface NoteChange {
+  monthKey: MonthKey;
+  text: string;
+}
+
+/** Local edits to push upstream, emitted once per store commit. */
+export interface LedgerChange {
+  days: DayChange[];
+  notes: NoteChange[];
+  actor: PersonId | null;
+}
+
+export type LedgerChangeListener = (change: LedgerChange) => void;
+
+/** Remote state to merge into the store; omitted fields are left untouched. */
+export interface RemoteLedger {
+  days?: unknown;
+  notes?: unknown;
+  updatedAt?: number | null;
+  lastActor?: PersonId | null;
+}

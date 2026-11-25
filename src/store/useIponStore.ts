@@ -21,14 +21,18 @@ import type {
   IponListener,
   IponTotals,
   IsoDate,
+  LedgerChange,
+  LedgerChangeListener,
   MonthKey,
   NotesMap,
   Paid,
   PersistedIponState,
   PersonId,
+  RemoteLedger,
   SettleCount,
   SettlePlan,
 } from '../types/ipon';
+import { PERSON_IDS } from '../types/ipon';
 import {
   COMBINED_YEAR_GOAL,
   DAILY_TARGET,
@@ -126,6 +130,61 @@ export function computeCurrentStreak(days: DaysMap, today: IsoDate): number {
   return streak;
 }
 
+const dateKeysOf = (...maps: DaysMap[]): DateKey[] =>
+  [...new Set(maps.flatMap((m) => Object.keys(m)))].filter(isValidDateKey).sort();
+
+const monthKeysOf = (...maps: NotesMap[]): MonthKey[] =>
+  [...new Set(maps.flatMap((m) => Object.keys(m)))].filter(isValidMonthKey).sort();
+
+/** Per-person paid flags that differ between two ledgers, plus changed notes. */
+export function diffLedger(
+  prevDays: DaysMap,
+  nextDays: DaysMap,
+  prevNotes: NotesMap,
+  nextNotes: NotesMap,
+): Pick<LedgerChange, 'days' | 'notes'> {
+  const days: LedgerChange['days'] = [];
+  if (prevDays !== nextDays) {
+    for (const key of dateKeysOf(prevDays, nextDays)) {
+      for (const person of PERSON_IDS) {
+        const value = nextDays[key]?.[person] ?? 0;
+        if ((prevDays[key]?.[person] ?? 0) !== value) days.push({ key, person, value });
+      }
+    }
+  }
+  const notes: LedgerChange['notes'] = [];
+  if (prevNotes !== nextNotes) {
+    for (const monthKey of monthKeysOf(prevNotes, nextNotes)) {
+      const text = nextNotes[monthKey] ?? '';
+      if ((prevNotes[monthKey] ?? '') !== text) notes.push({ monthKey, text });
+    }
+  }
+  return { days, notes };
+}
+
+export function daysEqual(a: DaysMap, b: DaysMap): boolean {
+  if (a === b) return true;
+  return dateKeysOf(a, b).every((k) => (a[k]?.j ?? 0) === (b[k]?.j ?? 0) && (a[k]?.m ?? 0) === (b[k]?.m ?? 0));
+}
+
+export function notesEqual(a: NotesMap, b: NotesMap): boolean {
+  if (a === b) return true;
+  return monthKeysOf(a, b).every((k) => (a[k] ?? '') === (b[k] ?? ''));
+}
+
+/** Union of paid flags: never un-pays a deposit present in either ledger. */
+export function mergeDays(base: DaysMap, incoming: DaysMap, ts: number): DaysMap {
+  const next: DaysMap = { ...base };
+  for (const key of dateKeysOf(incoming)) {
+    const prev = next[key];
+    const rec = incoming[key];
+    const j: Paid = prev?.j === 1 || rec?.j === 1 ? 1 : 0;
+    const m: Paid = prev?.m === 1 || rec?.m === 1 ? 1 : 0;
+    if (j !== (prev?.j ?? 0) || m !== (prev?.m ?? 0)) next[key] = { j, m, ts };
+  }
+  return next;
+}
+
 // ---------------------------------------------------------------------------
 // Persistence (localStorage, schema-versioned)
 // ---------------------------------------------------------------------------
@@ -193,7 +252,7 @@ export function deserializeState(raw: string | null): LoadResult {
   return { status: 'ok', state, migrated: version === undefined };
 }
 
-function getDefaultStorage(): StorageLike | null {
+export function getDefaultStorage(): StorageLike | null {
   try {
     return typeof localStorage === 'undefined' ? null : localStorage;
   } catch {
@@ -295,7 +354,15 @@ export function createIponStore(options: CreateIponStoreOptions = {}) {
     }
   }
 
+  const changeListeners = new Set<LedgerChangeListener>();
+  function subscribeChanges(listener: LedgerChangeListener): () => void {
+    changeListeners.add(listener);
+    return () => changeListeners.delete(listener);
+  }
+
   function commit(patch: { days?: DaysMap; notes?: NotesMap }, actor: PersonId | null): void {
+    const prevDays = days.peek();
+    const prevNotes = notes.peek();
     batch(() => {
       if (patch.days) days.value = patch.days;
       if (patch.notes) notes.value = patch.notes;
@@ -303,6 +370,51 @@ export function createIponStore(options: CreateIponStoreOptions = {}) {
       if (actor) lastActor.value = actor;
     });
     persist();
+    const diff = diffLedger(prevDays, days.peek(), prevNotes, notes.peek());
+    if (diff.days.length === 0 && diff.notes.length === 0) return;
+    const change: LedgerChange = { ...diff, actor };
+    for (const listener of changeListeners) {
+      try {
+        listener(change);
+      } catch (err) {
+        console.error('[iponStore] change listener failed', err);
+      }
+    }
+  }
+
+  /** Merge authoritative remote state without echoing it back as local changes. */
+  function applyRemote(remote: RemoteLedger): void {
+    const nextDays = remote.days === undefined ? null : sanitizeDays(remote.days);
+    const nextNotes = remote.notes === undefined ? null : sanitizeNotes(remote.notes);
+    const daysChanged = nextDays !== null && !daysEqual(days.peek(), nextDays);
+    const notesChanged = nextNotes !== null && !notesEqual(notes.peek(), nextNotes);
+    const updatedChanged = remote.updatedAt !== undefined && remote.updatedAt !== updatedAt.peek();
+    const actorChanged = remote.lastActor !== undefined && remote.lastActor !== lastActor.peek();
+    if (!daysChanged && !notesChanged && !updatedChanged && !actorChanged) return;
+    batch(() => {
+      if (daysChanged) days.value = nextDays;
+      if (notesChanged) notes.value = nextNotes;
+      if (updatedChanged) updatedAt.value = remote.updatedAt ?? null;
+      if (actorChanged) lastActor.value = remote.lastActor ?? null;
+    });
+    persist();
+  }
+
+  /** Restore a backup. `merge` only adds deposits and fills empty notes. */
+  function restoreState(state: { days: DaysMap; notes: NotesMap }, mode: ImportMode = 'merge'): void {
+    const incomingDays = sanitizeDays(state.days);
+    const incomingNotes = sanitizeNotes(state.notes);
+    if (mode === 'replace') {
+      commit({ days: incomingDays, notes: incomingNotes }, deviceActor);
+    } else {
+      const currentNotes = notes.peek();
+      const mergedNotes: NotesMap = { ...currentNotes };
+      for (const key of monthKeysOf(incomingNotes)) {
+        if (!currentNotes[key] && incomingNotes[key]) mergedNotes[key] = incomingNotes[key];
+      }
+      commit({ days: mergeDays(days.peek(), incomingDays, now()), notes: mergedNotes }, deviceActor);
+    }
+    emit({ type: 'restore', mode });
   }
 
   // --- actions --------------------------------------------------------------
@@ -432,7 +544,10 @@ export function createIponStore(options: CreateIponStoreOptions = {}) {
     setNote,
     refreshToday,
     reset,
+    restoreState,
+    applyRemote,
     subscribe,
+    subscribeChanges,
   };
 }
 

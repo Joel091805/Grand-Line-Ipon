@@ -1,0 +1,65 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$roomCode": {
+        ".validate": "$roomCode.matches(/^[A-Z0-9]{4,12}$/)",
+        "auth": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.hasChildren(['pinHash', 'createdAt'])",
+          "pinHash": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
+          },
+          "createdAt": {
+            ".read": "auth != null",
+            ".validate": "newData.isNumber()"
+          },
+          "$other": { ".validate": false }
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.isString() && newData.val() === newData.parent().parent().child('auth/pinHash').val()"
+          }
+        },
+        "meta": {
+          ".read": "auth != null && root.child('rooms/' + $roomCode + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && newData.parent().child('members/' + auth.uid).exists()",
+          "year": { ".validate": "newData.val() === 2026" },
+          "dailyTarget": { ".validate": "newData.val() === 50" },
+          "users": {
+            "$person": {
+              ".validate": "($person === 'j' || $person === 'm') && newData.hasChildren(['name', 'color'])",
+              "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
+              "color": { ".validate": "newData.isString() && newData.val().matches(/^#[0-9A-Fa-f]{6}$/)" },
+              "$other": { ".validate": false }
+            }
+          },
+          "updatedAt": { ".validate": "newData.isNumber()" },
+          "lastActor": { ".validate": "newData.val() === 'j' || newData.val() === 'm'" },
+          "$other": { ".validate": false }
+        },
+        "days": {
+          ".read": "auth != null && root.child('rooms/' + $roomCode + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && newData.parent().child('members/' + auth.uid).exists()",
+          "$dateKey": {
+            ".validate": "$dateKey.matches(/^2026-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/)",
+            "j": { ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1)" },
+            "m": { ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1)" },
+            "ts": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "notes": {
+          ".read": "auth != null && root.child('rooms/' + $roomCode + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && newData.parent().child('members/' + auth.uid).exists()",
+          "$monthKey": {
+            ".validate": "$monthKey.matches(/^2026-(0[1-9]|1[0-2])$/) && newData.isString() && newData.val().length <= 1000"
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}
